@@ -161,6 +161,10 @@ async function callClaude(content) {
     body: JSON.stringify({ messages: [{ role: "user", content }] }),
   });
   const data = await response.json();
+  if (!response.ok || data.error) {
+    console.error("FLAG coach error:", response.status, data.error || data);
+    throw new Error(data.error?.message || data.error || `http_${response.status}`);
+  }
   const text = (data.content || []).filter((b) => b.type === "text").map((b) => b.text).join("\n");
   return JSON.parse(text.replace(/```json|```/g, "").trim());
 }
