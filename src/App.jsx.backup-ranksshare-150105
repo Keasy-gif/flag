@@ -279,7 +279,6 @@ export default function Flag() {
   const [confirmClear, setConfirmClear] = useState(false);
   const [gradeUp, setGradeUp] = useState(null);
   const [wall, setWall] = useState(false);
-  const [showGrades, setShowGrades] = useState(false);
   const [focusTask, setFocusTask] = useState(null);
   const [liveUsers, setLiveUsers] = useState([]);
   const [listening, setListening] = useState(false);
@@ -287,7 +286,6 @@ export default function Flag() {
   const [, setTick] = useState(0);
   const fileRef = useRef(null);
   const avatarRef = useRef(null);
-  const importRef = useRef(null);
   const recRef = useRef(null);
 
   useEffect(() => {
@@ -547,45 +545,6 @@ export default function Flag() {
   };
 
   const removeTask = (id) => persist({ ...data, tasks: data.tasks.filter((t) => t.id !== id) });
-
-  const exportBlocks = () => {
-    const blocks = tasks.filter((t) => t.status !== "verified").map((t) => ({ titre: t.title, cat: t.cat, minutes: t.minutes }));
-    if (!blocks.length) return;
-    const payload = JSON.stringify({ v: 1, from: data.user.pseudo, blocks });
-    const blob = new Blob([payload], { type: "application/json" });
-    const file = new File([blob], "flag-blocs.json", { type: "application/json" });
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      navigator.share({ files: [file], title: "Mes blocs FLAG" }).catch(() => {});
-    } else {
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url; a.download = "flag-blocs.json"; a.click();
-      URL.revokeObjectURL(url);
-    }
-  };
-
-  const importBlocks = (e) => {
-    const file = e.target.files && e.target.files[0];
-    e.target.value = "";
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      try {
-        const parsed = JSON.parse(reader.result);
-        const blocks = (parsed.blocks || []).slice(0, 10);
-        const added = blocks.map((b) => ({
-          id: uid(),
-          date: today,
-          title: String(b.titre || "Bloc importé").slice(0, 80),
-          cat: CATS.includes(b.cat) ? b.cat : "Autre",
-          minutes: Math.min(180, Math.max(15, Number(b.minutes) || 30)),
-          status: "pending",
-        }));
-        if (added.length) persist({ ...data, tasks: [...data.tasks, ...added] });
-      } catch {}
-    };
-    reader.readAsText(file);
-  };
 
   const freeLimitHit = data.plan !== "plus" && tasks.length >= 3;
   const tryAdd = () => {
@@ -859,7 +818,7 @@ export default function Flag() {
       </section>
 
       {/* carte grade — art teintée */}
-      <section className="art art-blue rank-card rise" onClick={() => setShowGrades(true)} style={{ animationDelay: ".1s" }}>
+      <section className="art art-blue rank-card rise" style={{ animationDelay: ".1s" }}>
         <div className="rank-top">
           <div className="rank-avatar-wrap">
             <svg viewBox="0 0 96 96" width="96" height="96" className="rank-ring">
@@ -898,46 +857,7 @@ export default function Flag() {
             );
           })}
         </div>
-        <div className="grade-more">Tous les rangs ›</div>
       </section>
-
-      <input ref={importRef} type="file" accept="application/json" style={{ display: "none" }} onChange={importBlocks} />
-
-      <section className="card share-blocks rise" style={{ animationDelay: ".14s" }}>
-        <div className="rival-head">
-          <span className="rival-title">🔁 Partage de blocs</span>
-          <span className="label">envoie ton planning, importe celui d'un pote</span>
-        </div>
-        <div className="row-btns">
-          <button className="btn-ghost" onClick={() => importRef.current && importRef.current.click()}>Importer</button>
-          <button className="btn-black" onClick={exportBlocks} disabled={!pending.length}>Partager mes blocs</button>
-        </div>
-      </section>
-
-      {showGrades && (
-        <div className="overlay" onClick={() => setShowGrades(false)}>
-          <div className="sheet" onClick={(e) => e.stopPropagation()}>
-            <button className="circle-btn sheet-close" onClick={() => setShowGrades(false)} aria-label="Fermer">×</button>
-            <div className="sheet-title">Les rangs</div>
-            <div className="sheet-body ranks-glass-list">
-              {RANK_LEVELS.map((g) => {
-                const reached = levelInfo.level >= g.atLevel;
-                const current = rank.current.name === g.name;
-                return (
-                  <div key={g.name} className={"rank-glass-row" + (reached ? "" : " rank-glass-locked") + (current ? " rank-glass-current" : "")} style={current ? { borderColor: g.color } : {}}>
-                    <div className="rank-glass-icon" style={{ background: g.color + "26", borderColor: reached ? g.color : "transparent" }}>{g.icon}</div>
-                    <div className="task-body">
-                      <span className="task-title" style={reached ? { color: g.color } : {}}>{g.name}</span>
-                      <span className="label">Niveau {g.atLevel}+</span>
-                    </div>
-                    {current ? <span className="gr-badge" style={{ color: g.color, borderColor: g.color }}>ACTUEL</span> : reached ? <span className="label">✓</span> : <span className="label">🔒</span>}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* le rival */}
       <section className="card rival rise" style={{ animationDelay: ".13s" }}>
@@ -1487,17 +1407,6 @@ export default function Flag() {
 /* ================= styles — éditorial ================= */
 
 const css = `
-/* rangs en verre + partage de blocs */
-.grade-card{cursor:pointer;}
-.grade-more{font-size:12px; font-weight:700; margin-top:9px; opacity:.92;}
-.ranks-glass-list{display:flex; flex-direction:column; gap:10px; max-height:60vh; overflow-y:auto;}
-.rank-glass-row{display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:18px; background:var(--glass); backdrop-filter:blur(16px) saturate(1.3); -webkit-backdrop-filter:blur(16px) saturate(1.3); border:1.5px solid var(--glass-b); transition:opacity .15s;}
-.rank-glass-locked{opacity:.4;}
-.rank-glass-current{border-width:2px;}
-.rank-glass-icon{width:64px; height:64px; border-radius:20px; flex-shrink:0; font-size:32px; display:flex; align-items:center; justify-content:center; border:2px solid transparent;}
-.gr-badge{font-size:10px; font-weight:800; letter-spacing:1px; border:1.5px solid; border-radius:99px; padding:4px 9px; flex-shrink:0;}
-.share-blocks{padding:16px;}
-
 /* niveau + maîtrise (v2) */
 .cat-bars{display:flex; flex-direction:column; gap:8px; margin-top:12px;}
 .cat-bar-top{display:flex; justify-content:space-between; font-size:11px; font-weight:700; margin-bottom:4px; opacity:.95;}
