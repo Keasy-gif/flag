@@ -888,12 +888,11 @@ export default function Flag() {
         </div>
         <div className="cat-bars">
           {CATS.map((c) => {
-            const catIcons = { "Études": "📘", "Sport": "🏋️", "Autre": "⚡" };
-            const m = catXP[c] || 0;
+            const m = catXP[c.id] || 0;
             const li = levelFromXP(m);
             return (
-              <div key={c} className="cat-bar">
-                <div className="cat-bar-top"><span>{catIcons[c] || "⚡"} {c}</span><span>Niv.{li.level}</span></div>
+              <div key={c.id} className="cat-bar">
+                <div className="cat-bar-top"><span>{c.icon} {c.id}</span><span>Niv.{li.level}</span></div>
                 <div className="cat-bar-track"><div className="cat-bar-fill" style={{ width: Math.round(li.prog * 100) + "%" }} /></div>
               </div>
             );
