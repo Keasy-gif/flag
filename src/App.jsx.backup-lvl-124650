@@ -74,32 +74,6 @@ const GRADES = [
   { min: 180, name: "Immortel", icon: "⚡", color: "#E83A5C" },
   { min: 365, name: "Radiant", icon: "👑", color: "#E8A13A" },
 ];
-const xpForLevel = (level) => Math.round(15 * level * level);
-const levelFromXP = (totalMin) => {
-  let level = 1;
-  while (xpForLevel(level + 1) <= totalMin) level++;
-  const base = xpForLevel(level);
-  const nextNeed = xpForLevel(level + 1);
-  const prog = Math.min(1, (totalMin - base) / (nextNeed - base));
-  return { level, totalMin, base, nextNeed, prog };
-};
-const RANK_LEVELS = [
-  { atLevel: 1, name: "Fer", icon: "🔩", color: "#8A93A6" },
-  { atLevel: 3, name: "Bronze", icon: "🥉", color: "#CD7F32" },
-  { atLevel: 6, name: "Argent", icon: "🥈", color: "#9AA6B5" },
-  { atLevel: 10, name: "Or", icon: "🥇", color: "#E8B33A" },
-  { atLevel: 15, name: "Platine", icon: "💠", color: "#23C4A9" },
-  { atLevel: 21, name: "Diamant", icon: "💎", color: "#2FA6E8" },
-  { atLevel: 31, name: "Ascendant", icon: "🔮", color: "#8B4CE8" },
-  { atLevel: 46, name: "Immortel", icon: "⚡", color: "#E83A5C" },
-  { atLevel: 66, name: "Radiant", icon: "👑", color: "#E8A13A" },
-];
-const rankForLevel = (level) => {
-  let r = RANK_LEVELS[0];
-  for (const x of RANK_LEVELS) if (level >= x.atLevel) r = x;
-  const next = RANK_LEVELS[RANK_LEVELS.indexOf(r) + 1] || null;
-  return { current: r, next };
-};
 const gradeFor = (streak) => {
   let g = GRADES[0];
   for (const x of GRADES) if (streak >= x.min) g = x;
@@ -322,12 +296,6 @@ export default function Flag() {
   const minutesDone = done.reduce((s, t) => s + (t.minutes || 0), 0);
   const pct = tasks.length ? Math.round((done.length / tasks.length) * 100) : 0;
   const grade = gradeFor(data.streak);
-  const allVerified = data.tasks.filter((t) => t.status === "verified");
-  const totalMinutesAll = allVerified.reduce((s, t) => s + (t.minutes || 0), 0);
-  const levelInfo = levelFromXP(totalMinutesAll);
-  const rank = rankForLevel(levelInfo.level);
-  const catXP = {};
-  allVerified.forEach((t) => { catXP[t.cat] = (catXP[t.cat] || 0) + (t.minutes || 0); });
   const bilan = (data.bilans || {})[today];
   const persona = personaOf(data.persona);
   const tint = tintOf(data.tint);
@@ -691,25 +659,23 @@ export default function Flag() {
       return;
     }
     if (verdict.valide) {
-      const beforeRank = rank.current;
+      const before = gradeFor(data.streak).current;
       let { streak, lastDay } = data;
       if (lastDay !== today) {
         streak = lastDay === yesterdayKey() ? streak + 1 : 1;
         lastDay = today;
       }
-      const newTasks = data.tasks.map((t) =>
-        t.id === verif.taskId ? { ...t, status: "verified", at: nowHM(), motif: verdict.motif, thumb: verif.thumb, proof: verif.mid, startedAt: null } : t
-      );
-      const newTotalMin = newTasks.filter((t) => t.status === "verified").reduce((s, t) => s + (t.minutes || 0), 0);
-      const afterRank = rankForLevel(levelFromXP(newTotalMin).level).current;
+      const after = gradeFor(streak).current;
       persist({
         ...data,
         streak,
         lastDay,
         totalVerified: (data.totalVerified || 0) + 1,
-        tasks: newTasks,
+        tasks: data.tasks.map((t) =>
+          t.id === verif.taskId ? { ...t, status: "verified", at: nowHM(), motif: verdict.motif, thumb: verif.thumb, proof: verif.mid, startedAt: null } : t
+        ),
       });
-      if (afterRank.name !== beforeRank.name) setTimeout(() => setGradeUp(afterRank), 600);
+      if (after.name !== before.name) setTimeout(() => setGradeUp(after), 600);
       if (data.uid) window.storage.delete("live:" + data.uid, true).catch(() => {});
     } else {
       persist({ ...data, tasks: data.tasks.map((t) => (t.id === verif.taskId ? { ...t, lastRefus: verdict.motif } : t)) });
