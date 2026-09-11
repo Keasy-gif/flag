@@ -820,36 +820,15 @@ export default function Flag() {
       {/* carte grade — art teintée */}
       <section
         className="art grade-card rise"
-        style={{ animationDelay: ".1s", backgroundImage: `repeating-linear-gradient(90deg, rgba(255,255,255,.14) 0 1px, transparent 1px 3px), radial-gradient(circle at 30% 25%, ${rank.current.color}, transparent 60%), linear-gradient(140deg, ${rank.current.color} 0%, #1c1c1e 130%)` }}
+        style={{ animationDelay: ".1s", backgroundImage: `repeating-linear-gradient(90deg, rgba(255,255,255,.14) 0 1px, transparent 1px 3px), radial-gradient(circle at 30% 25%, ${grade.current.color}, transparent 60%), linear-gradient(140deg, ${grade.current.color} 0%, #1c1c1e 130%)` }}
       >
-        <div className="lvl-top">
-          <div className="lvl-ring-wrap">
-            <svg viewBox="0 0 64 64" className="lvl-ring">
-              <circle cx="32" cy="32" r="27" className="lvl-ring-bg" />
-              <circle cx="32" cy="32" r="27" className="lvl-ring-fg" strokeDasharray={`${levelInfo.prog * 169.6} 169.6`} />
-            </svg>
-            <div className="lvl-ring-icon">{rank.current.icon}</div>
-          </div>
-          <div className="lvl-mid">
-            <div className="lvl-num">Niv. {levelInfo.level}</div>
-            <div className="grade-name">{rank.current.name}</div>
-          </div>
+        <div className="grade-top">
+          <div className="grade-name">{grade.current.icon} {grade.current.name}</div>
           <div className="grade-streak">🔥 {data.streak} j</div>
         </div>
+        <div className="grade-bar"><div className="grade-fill" style={{ width: Math.round(grade.prog * 100) + "%" }} /></div>
         <div className="grade-hint">
-          {rank.next ? `${rank.next.icon} ${rank.next.name} au niveau ${rank.next.atLevel}` : "Rang maximum. Légende vivante."}
-        </div>
-        <div className="cat-bars">
-          {CATS.map((c) => {
-            const m = catXP[c.id] || 0;
-            const li = levelFromXP(m);
-            return (
-              <div key={c.id} className="cat-bar">
-                <div className="cat-bar-top"><span>{c.icon} {c.id}</span><span>Niv.{li.level}</span></div>
-                <div className="cat-bar-track"><div className="cat-bar-fill" style={{ width: Math.round(li.prog * 100) + "%" }} /></div>
-              </div>
-            );
-          })}
+          {grade.next ? `${grade.next.icon} ${grade.next.name} dans ${grade.next.min - data.streak} jour${grade.next.min - data.streak > 1 ? "s" : ""}` : "Grade maximum. Respect."}
         </div>
       </section>
 
